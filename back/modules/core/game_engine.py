@@ -5,9 +5,13 @@ from uuid import uuid4
 
 
 class GameRoom:
-    def __init__(self):
-        self.map: list[list[int]] = [[0,0],
-                                     [0,0]]
+    def __init__(self, shape: tuple = (10,10), n_bots: int = 0):
+        self.map: list[list[int]] = [[0]*shape[0]]*shape[1]
+
+        self.snaked_tiles = {
+
+        }
+
         self.players: dict[int,Player] = {}
         self.mobs:dict[int,Snake] = {}
         self.active = True
