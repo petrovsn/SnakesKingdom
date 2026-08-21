@@ -1,11 +1,13 @@
 import asyncio
 from dataclasses import dataclass
 import enum
+
 class Tile(int, enum.Enum):
     EMPTY = 0
     SNAKE = 1
     FOOD = 2
     WALL = 3
+    NEST = 4
 
 class Direction(int, enum.Enum ):
     UP = 1
@@ -39,10 +41,10 @@ class Direction(int, enum.Enum ):
 class Snake:
     
 
-    def __init__(self, id, position, 
+    def __init__(self, position, 
                  on_move_head = lambda id,pos:None, 
                  on_move_tail = lambda id,pos:None):
-        self.id = id
+
         self.hp =  5
         self.direction: Direction = Direction.ZERO
         self.body = [position]
@@ -57,15 +59,18 @@ class Snake:
         if self.direction != 0:
             head = self.direction.apply(self.body[-1])
             self.body.append(head)
-            self.on_move_head(self.id, head)
+            self.on_move_head(self, head)
 
     def move_tail(self):
         while len(self.body)>self.hp:
             tail = self.body.pop(0)
-            self.on_move_tail(self.id, tail)
+            self.on_move_tail(self, tail)
 
     def change_hp(self, value):
         self.hp+=value
+
+    def death(self):
+        pass
 
 
 @dataclass

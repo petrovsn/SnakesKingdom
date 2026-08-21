@@ -1,5 +1,5 @@
 import time
-from modules.core.entities import Snake, Player
+from modules.core.entities import Snake, Player, Tile
 import asyncio
 from uuid import uuid4
 
@@ -34,10 +34,24 @@ class GameRoom:
         self.active = False
 
     def handle_command(self, player_id, direction):
-        pass
+        self.players[player_id].snake.set_direction(direction)
+
+
+    def on_head_collision(self, snake:Snake, head_position):
+        x,y = head_position
+        match self.map[x][y]:
+            case Tile.FOOD:
+                snake.change_hp(1)
+            case Tile.WALL:
+                snake.death()
 
     def update_world(self):
-        self.map[0][1] = len(self.players)
+        for player in self.players.values():
+            player.snake.move_head()
+
+
+        for player in self.players.values():
+            player.snake.move_tail()
 
     def get_game_data(self, player_id):
         return {
