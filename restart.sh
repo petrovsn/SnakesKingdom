@@ -1,0 +1,1 @@
+sudo systemctl restart snakes_kingdom.service
