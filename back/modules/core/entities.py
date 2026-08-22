@@ -1,13 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 import enum
-
-class Tile(int, enum.Enum):
-    EMPTY = 0
-    SNAKE = 1
-    FOOD = 2
-    WALL = 3
-    NEST = 4
+from uuid import UUID
 
 class Direction(int, enum.Enum ):
     UP = 1
@@ -30,50 +24,101 @@ class Direction(int, enum.Enum ):
             case Direction.ZERO:
                 return (x, y)
 
-"""
-[1,1,1,1,1,1,1]
-[1,0,0,1,0,0,1]
-[1,0,0,1,0,0,1]
-[1,0,0,0,0,0,1]
-[1,1,1,1,1,1,1]
-"""
-
 class Snake:
-    
-
-    def __init__(self, position, 
+    def __init__(self, snake_id, position, 
                  on_move_head = lambda id,pos:None, 
                  on_move_tail = lambda id,pos:None):
-
-        self.hp =  5
+        self.id = snake_id
+        self.hp =  4
+        self.is_alive = True
         self.direction: Direction = Direction.ZERO
         self.body = [position]
+
         self.on_move_head = on_move_head
         self.on_move_tail = on_move_tail
 
+    def is_alive_check(func):
+        def wrapper(self, *args, **kwargs):
+            if self.is_alive:
+                return func(self, *args, **kwargs)
+        return wrapper
+
+    def is_moving_check(func):
+        def wrapper(self, *args, **kwargs):
+            if self.direction != 0:
+                return func(self, *args, **kwargs)
+        return wrapper
+
+    
+    @is_alive_check
     def set_direction(self, new_direction:Direction):
         if ((self.direction+new_direction)%2==1) or (self.direction==0):
             self.direction = new_direction
 
+    @is_alive_check
+    @is_moving_check
     def move_head(self):
-        if self.direction != 0:
-            head = self.direction.apply(self.body[-1])
-            self.body.append(head)
-            self.on_move_head(self, head)
+        head = self.direction.apply(self.body[-1])
+        self.body.append(head)
+        self.on_move_head(self.id, head)
 
+    @is_alive_check
+    @is_moving_check
     def move_tail(self):
         while len(self.body)>self.hp:
             tail = self.body.pop(0)
-            self.on_move_tail(self, tail)
+            self.on_move_tail(self.id, tail)
+
+    @is_alive_check
+    @is_moving_check
+    def move(self):
+        while len(self.body)>=self.hp:
+            tail = self.body.pop(0)
+            self.on_move_tail(self.id, tail)
+
+        head = self.direction.apply(self.body[-1])
+        self.body.append(head)
+        self.on_move_head(self.id, head)
+
+    def get_head(self):
+        return self.body[-1]
 
     def change_hp(self, value):
         self.hp+=value
 
     def death(self):
-        pass
+        self.is_alive = False
+        self.body.pop(-1)
+
+    def respawn(self, position):
+        self.hp =  4
+        self.is_alive = True
+        self.direction: Direction = Direction.ZERO
+        self.body = [position]
 
 
 @dataclass
-class Player:
-    snake: Snake
-    connector: asyncio.Queue
+class Participant:
+    name: str
+    color: str
+    points: int = 0
+    is_ready: bool = False
+
+    def to_dict(self):
+        return {
+            "name":self.name,
+            "color": self.color,
+            "points": self.points,
+            "is_ready": self.is_ready
+        }
+
+    def change_points(self, value):
+        self.points+=value
+
+@dataclass
+class Player(Participant):
+    connector: asyncio.Queue = None
+
+@dataclass
+class Bot(Participant):
+    is_ready: bool = True

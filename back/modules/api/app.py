@@ -3,8 +3,8 @@ import asyncio
 from modules.api.routes.game import game_router
 from modules.api.routes.admin import admin_router
 from contextlib import asynccontextmanager
-from modules.core.game_engine import GameManager
-
+from modules.core.game_manager import GameManager
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,3 +17,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(game_router)
 app.include_router(admin_router)
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
