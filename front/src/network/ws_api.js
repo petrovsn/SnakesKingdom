@@ -1,4 +1,8 @@
-const WS_URL = import.meta.env.VITE_WS_URL || "";
+const WS_URL = import.meta.env.VITE_WS_URL || (
+    window.location.protocol === "https:"
+        ? `wss://${window.location.host}`
+        : `ws://${window.location.host}`
+);
 
 
 export function create_connection(room_id, player_name) {
