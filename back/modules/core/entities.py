@@ -32,6 +32,7 @@ class Snake:
         self.hp =  4
         self.is_alive = True
         self.direction: Direction = Direction.ZERO
+        self.next_direction: Direction = Direction.ZERO
         self.body = [position]
 
         self.on_move_head = on_move_head
@@ -45,7 +46,7 @@ class Snake:
 
     def is_moving_check(func):
         def wrapper(self, *args, **kwargs):
-            if self.direction != 0:
+            if self.next_direction != 0:
                 return func(self, *args, **kwargs)
         return wrapper
 
@@ -53,11 +54,12 @@ class Snake:
     @is_alive_check
     def set_direction(self, new_direction:Direction):
         if ((self.direction+new_direction)%2==1) or (self.direction==0):
-            self.direction = new_direction
+            self.next_direction = new_direction
 
     @is_alive_check
     @is_moving_check
     def move_head(self):
+        self.direction = self.next_direction
         head = self.direction.apply(self.body[-1])
         self.body.append(head)
         self.on_move_head(self.id, head)
@@ -65,6 +67,7 @@ class Snake:
     @is_alive_check
     @is_moving_check
     def move_tail(self):
+        self.direction = self.next_direction
         while len(self.body)>self.hp:
             tail = self.body.pop(0)
             self.on_move_tail(self.id, tail)
@@ -72,6 +75,7 @@ class Snake:
     @is_alive_check
     @is_moving_check
     def move(self):
+        self.direction = self.next_direction
         while len(self.body)>=self.hp:
             tail = self.body.pop(0)
             self.on_move_tail(self.id, tail)
@@ -94,6 +98,7 @@ class Snake:
         self.hp =  4
         self.is_alive = True
         self.direction: Direction = Direction.ZERO
+        self.next_direction: Direction = Direction.ZERO
         self.body = [position]
 
 

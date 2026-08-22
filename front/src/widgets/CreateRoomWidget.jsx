@@ -3,11 +3,10 @@ import * as game_controller from "../controllers/game_controller";
 import "../styles/CreateRoomWidget.css";
 
 
-function CreateRoomWidget({ onCreated }) {
+function CreateRoomWidget({ onCreated, onConnectionChange   }) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [isConnected, setIsConnected] = useState(false);
 
     const [form, setForm] = useState({
         player_name: "",
@@ -50,7 +49,13 @@ function CreateRoomWidget({ onCreated }) {
                 await game_controller.create_room_and_connect(
                     roomConfig,
                     player_name,
-                    () => setIsConnected(true)
+                    () => {
+                        console.log("CreateRoomWidget.create_room_and_connect")
+                        if (onConnectionChange ){
+                            console.log("CreateRoomWidget.if onConnected")
+                            onConnectionChange (true)
+                        }
+                    }
                 );
 
             setIsOpen(false);
@@ -77,6 +82,7 @@ function CreateRoomWidget({ onCreated }) {
     const handleOpen = () => {
         setError(null);
         setIsOpen(true);
+        onConnectionChange (false)
     };
 
 

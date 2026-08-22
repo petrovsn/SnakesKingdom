@@ -18,10 +18,20 @@ class GameRoom:
         self.participants: dict[str, Participant] = {}
         self.snakes: dict[str, Snake] = {}
 
-        self.active = False
-
         self.respawn = respawn
         self._room_id = uuid4().hex
+
+        self.active = False
+        self.game_loop_task = None
+
+    def start(self):
+        self.game_loop_task = asyncio.create_task(self.game_loop())
+
+    def stop(self):
+        if self.game_loop_task is not None:
+            self.game_loop_task.cancel()
+            self.game_loop_task = None
+
 
     @property
     def room_id(self):
@@ -54,20 +64,21 @@ class GameRoom:
         self.snake_collision_controller.free_from(player_id)
 
     def players_are_ready(self):
-        result = True
+        if self.participants == {}:
+            return False
         for participant in self.participants.values():
-            result = result and participant.is_ready
-        return result
-
-    def stop(self):
-        self.active = False
+            if not participant.is_ready: 
+                return False
+        return True
 
     def handle_command(self, snake_id, command):
         if command == "ready":
             self.participants[snake_id].is_ready = True
         elif command == "respawn":
             if self.respawn and not self.snakes[snake_id].is_alive:
-                self.snakes[snake_id].respawn()
+                self.snake_collision_controller.free_from(snake_id)
+                random_empty_position = self.map.get_random_free_place(on_additional_check = self.snake_collision_controller.is_not_snaked)       
+                self.snakes[snake_id].respawn(random_empty_position)
         else:
             try:
                 direction = getattr(Direction, command.upper())
@@ -148,14 +159,14 @@ class GameRoom:
                 player.connector.put_nowait(game_data)
 
     async def game_loop(self):
-        while not self.players_are_ready():
-            await asyncio.sleep(0.1)
-
-        self.active = True
-        while self.active:
+        self.active = False
+        while True:
             time_start = time.perf_counter()
 
-            self.update_world()
+            if not self.active:
+                self.active = self.players_are_ready()
+            if self.active:
+                self.update_world()
 
             self.update_views()
 

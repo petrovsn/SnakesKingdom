@@ -9,9 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     game_manager = GameManager()
+    game_manager.start()
     app.state.game_manager =game_manager
 
     yield
+
+    game_manager.stop()
 
 
 app = FastAPI(lifespan=lifespan)

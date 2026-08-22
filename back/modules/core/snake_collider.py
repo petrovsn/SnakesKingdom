@@ -37,11 +37,11 @@ class SnakesCollisionController:
 
     def free_from(self, snake_id):
         to_delete = []
-        for position, tile_claim in self.snaked_tiles:
+        for position, tile_claim in self.snaked_tiles.items():
             if tile_claim.snake_id == snake_id:
                 to_delete.append(position)
         for position in to_delete:
-            self.free(position)
+            self.free(snake_id, position)
 
     def get_collided_snakes(self):
         return self.collided_snakes 

@@ -34,6 +34,7 @@ export function create_connection(room_id, player_name) {
                 socket.send(JSON.stringify({
                     "set_player_name": player_name,
                 }));
+                callback()
             });
         },
 

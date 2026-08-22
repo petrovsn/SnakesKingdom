@@ -4,69 +4,107 @@ import GameViewer from "./widgets/GameViewer.jsx";
 import RawGameDataViewer from "./widgets/RawGameDataViewer.jsx";
 import PlayersTable from "./widgets/PlayersTable.jsx";
 import CreateRoomWidget from "./widgets/CreateRoomWidget.jsx";
+import RoomStatusWidget from "./widgets/RoomStatusWidget.jsx";
+import JoinRoomWidget from "./widgets/JoinRoomWidget.jsx";
+import PlayerStatusWidget from "./widgets/PlayerStatusWidget.jsx";
 
+import './styles/App.css'
 
 function App() {
-    const [isConnected, setIsConnected] = useState(false);
-    useEffect(() => {
-        if (!isConnected) {
-            return;
-        }
+  const [isConnected, setIsConnected] = useState(false);
+  useEffect(() => {
+    console.log("App.useEffect", isConnected)
+    if (!isConnected) {
+      return;
+    }
 
-        const handleKeyDown = (event) => {
-            console.log(
-                "KEY:",
-                event.key,
-                "CODE:",
-                event.code
-            );
+    const handleKeyDown = (event) => {
+      const commands = {
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        ArrowRight: "right",
 
-            const commands = {
-                ArrowUp: "up",
-                ArrowDown: "down",
-                ArrowLeft: "left",
-                ArrowRight: "right",
+        KeyW: "up",
+        KeyA: "left",
+        KeyS: "down",
+        KeyD: "right",
+      };
 
-                KeyW: "up",
-                KeyA: "left",
-                KeyS: "down",
-                KeyD: "right",
-            };
+      const command = commands[event.code];
 
-            const command = commands[event.code];
+      if (!command) {
+        return;
+      }
 
-            if (!command) {
-                return;
-            }
+      event.preventDefault();
 
-            event.preventDefault();
+      game_controller.send_command(command);
+    };
 
-            game_controller.send_command(command);
-        };
+    window.addEventListener("keydown", handleKeyDown);
 
-        window.addEventListener("keydown", handleKeyDown);
-
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-            game_controller.disconnect();
-        };
-    }, [isConnected]);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      game_controller.disconnect();
+    };
+  }, [isConnected]);
 
 
-  return (
-    <div>
-      <CreateRoomWidget
-        onCreated={(result) => {
-          console.log("Room created:", result);
-        }}
-      />
 
-      <PlayersTable />
-      <GameViewer />
-      <RawGameDataViewer />
+    return (
+        <div className="App">
 
-    </div>
-  );
+            <header className="app-header">
+
+                <h1>SnakesKingdom</h1>
+
+                <div className="room-actions">
+
+                    <CreateRoomWidget
+                        onConnectionChange={setIsConnected}
+                    />
+
+                    <JoinRoomWidget
+                        onConnectionChange={setIsConnected}
+                    />
+
+                </div>
+
+            </header>
+
+
+            <main className="game-layout">
+
+                {/* СЛЕВА */}
+                <aside className="game-sidebar">
+
+                    <RoomStatusWidget />
+
+                    <PlayerStatusWidget />
+
+                </aside>
+
+
+                {/* ЦЕНТР */}
+                <section className="game-area">
+
+                    <GameViewer />
+
+                </section>
+
+
+                {/* СПРАВА */}
+                <section className="players-area">
+
+                    <PlayersTable />
+
+                </section>
+
+            </main>
+
+        </div>
+    );
 }
 
 

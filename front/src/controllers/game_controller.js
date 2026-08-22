@@ -30,6 +30,31 @@ export async function create_room_and_connect(
     return roomId;
 }
 
+export function connect_to_room(
+    roomId,
+    playerName,
+    onConnected
+) {
+    return new Promise((resolve, reject) => {
+        try {
+            connect(
+                roomId,
+                playerName,
+                () => {
+                    if (onConnected) {
+                        onConnected();
+                    }
+
+                    resolve(roomId);
+                }
+            );
+        }
+        catch (error) {
+            reject(error);
+        }
+    });
+}
+
 
 function connect(
     roomId,
@@ -44,9 +69,10 @@ function connect(
 
 
     connection.on_open(() => {
-        console.log("Game WebSocket connected");
+        console.log("Game WebSocket connected",onConnected);
 
         if (onConnected) {
+            console.log("Call onConnected")
             onConnected();
         }
     });

@@ -1,5 +1,4 @@
 import { useSelector } from "react-redux";
-import * as game_controller from "../controllers/game_controller";
 import "../styles/GameViewer.css";
 
 
@@ -24,12 +23,7 @@ function GameViewer() {
         );
     }
 
-    const {
-        world,
-        snakes,
-        player_id,
-        service_info,
-    } = gameState;
+    const { world, snakes } = gameState;
 
     const height = world?.length ?? 0;
     const width = world?.[0]?.length ?? 0;
@@ -43,95 +37,40 @@ function GameViewer() {
     }
 
 
-    /*
-     * ============================================================
-     * CURRENT PLAYER
-     * ============================================================
-     */
-
-    const playerSnake = snakes?.[player_id];
-
-    const isDead =
-        playerSnake !== undefined &&
-        playerSnake.alive === false;
-
-    const respawnEnabled =
-        service_info?.respawn === true;
-
-
-    const handleRespawn = () => {
-        game_controller.send_command("respawn");
-    };
-
-
-    /*
-     * ============================================================
-     * SNAKES
-     * ============================================================
-     */
-
     const snakeCells = new Map();
 
 
     Object.entries(snakes ?? {}).forEach(
         ([snakeId, snake]) => {
-
-            if (!snake.body) {
-                return;
-            }
-
             snake.body.forEach(
                 ([x, y], index) => {
-
                     snakeCells.set(`${x}:${y}`, {
                         snakeId,
-
-                        isHead:
-                            index === snake.body.length - 1,
-
+                        isHead: index === snake.body.length - 1,
                         direction: snake.direction,
                         color: snake.color,
-                        alive: snake.alive,
+                        alive: snake.alive
                     });
-
                 }
             );
         }
     );
 
 
-    /*
-     * ============================================================
-     * CELLS
-     * ============================================================
-     */
-
     const cells = [];
 
 
-    for (
-        let visualY = 0;
-        visualY < height;
-        visualY++
-    ) {
+    for (let visualY = 0; visualY < height; visualY++) {
         const worldY = height - 1 - visualY;
 
+        for (let x = 0; x < width; x++) {
+            const worldValue = world[worldY][x];
 
-        for (
-            let x = 0;
-            x < width;
-            x++
-        ) {
-
-            const worldValue =
-                world[worldY][x];
-
-            const snake =
-                snakeCells.get(`${x}:${worldY}`);
-
+            const snake = snakeCells.get(
+                `${x}:${worldY}`
+            );
 
             let className = "game-cell";
-
 
             if (worldValue === 3) {
                 className += " wall";
@@ -142,6 +81,7 @@ function GameViewer() {
             else {
                 className += " floor";
             }
+
 
 
             if (snake) {
@@ -156,27 +96,18 @@ function GameViewer() {
                 }
             }
 
-
             cells.push(
                 <div
                     key={`${x}:${worldY}`}
                     className={className}
                 >
-
                     {snake && (
                         snake.isHead
                             ? (
                                 <div
-                                    className={
-                                        `snake-head-shape direction-${
-                                            DIRECTIONS[
-                                                snake.direction
-                                            ]
-                                        }`
-                                    }
+                                    className={`snake-head-shape direction-${DIRECTIONS[snake.direction]}`}
                                     style={{
-                                        "--snake-color":
-                                            snake.color,
+                                        "--snake-color": snake.color,
                                     }}
                                 />
                             )
@@ -190,22 +121,14 @@ function GameViewer() {
                                 />
                             )
                     )}
-
                 </div>
             );
         }
     }
 
 
-    /*
-     * ============================================================
-     * RENDER
-     * ============================================================
-     */
-
     return (
         <div className="game-viewer">
-
             <div
                 className="game-board"
                 style={{
@@ -215,32 +138,6 @@ function GameViewer() {
             >
                 {cells}
             </div>
-
-
-            {isDead && (
-                <div className="game-over-overlay">
-
-                    <div className="game-over-content">
-
-                        <div className="game-over-title">
-                            DEAD
-                        </div>
-
-
-                        {respawnEnabled && (
-                            <button
-                                className="game-over-respawn-button"
-                                onClick={handleRespawn}
-                            >
-                                Respawn
-                            </button>
-                        )}
-
-                    </div>
-
-                </div>
-            )}
-
         </div>
     );
 }
