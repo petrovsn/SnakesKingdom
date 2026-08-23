@@ -58,6 +58,8 @@ class Snake:
     
     @is_alive_check
     def set_direction(self, new_direction:Direction):
+        if new_direction==Direction.ZERO:
+            return
         if ((self.direction+new_direction)%2==1) or (self.direction==0):
             self.next_direction = new_direction
 
