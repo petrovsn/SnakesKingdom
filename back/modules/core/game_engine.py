@@ -64,7 +64,7 @@ class GameRoom:
         self.participants[player_id] = Player(
             name="UnknownPlayer",
             connector=asyncio.Queue(maxsize=1),
-            is_ready = self.active,
+            is_ready = False,
             color=player_color
         )
 
@@ -218,13 +218,10 @@ class GameRoom:
                 player.connector.put_nowait(game_data)
 
     async def game_loop(self):
-        self.active = False
         while True:
             time_start = time.perf_counter()
 
-            if not self.active:
-                self.active = self.players_are_ready()
-            if self.active:
+            if self.players_are_ready():
                 self.update_world()
 
             self.update_views()
