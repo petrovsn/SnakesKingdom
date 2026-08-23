@@ -85,7 +85,7 @@ class GameRoom:
 
     def players_are_ready(self):
         player_exists = False
-        for participant in self.participants:
+        for participant in self.participants.values():
             if isinstance(participant,Player):
                 player_exists = True
         if not player_exists:
