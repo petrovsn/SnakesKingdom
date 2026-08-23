@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import dataclass
 import enum
 from uuid import UUID
+from typing import Any
 
 class Direction(int, enum.Enum ):
     UP = 1
@@ -35,8 +36,12 @@ class Snake:
         self.next_direction: Direction = Direction.ZERO
         self.body = [position]
 
+        
+
         self.on_move_head = on_move_head
         self.on_move_tail = on_move_tail
+
+        self.on_move_head(self.id, self.get_head())
 
     def is_alive_check(func):
         def wrapper(self, *args, **kwargs):
@@ -100,6 +105,7 @@ class Snake:
         self.direction: Direction = Direction.ZERO
         self.next_direction: Direction = Direction.ZERO
         self.body = [position]
+        self.on_move_head(self.id, self.get_head())
 
 
 @dataclass
@@ -127,3 +133,4 @@ class Player(Participant):
 @dataclass
 class Bot(Participant):
     is_ready: bool = True
+    ai: Any = lambda x: None

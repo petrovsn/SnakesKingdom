@@ -4,9 +4,9 @@ from uuid import uuid4
 from modules.core.entities import Snake, Player, Direction, Bot, Participant
 from modules.core.map_generator import GameMap, Tile
 from modules.core.snake_collider import SnakesCollisionController
-
+from modules.core.ai import BotAi
 from modules.utils.colors import get_color
-
+from modules.utils.names import get_name
 class GameRoom:
     def __init__(self, shape: tuple = (20,20), speed = 4, n_bots: int = 0, respawn = True):
         self.game_tick = 1.0/speed
@@ -18,11 +18,16 @@ class GameRoom:
         self.participants: dict[str, Participant] = {}
         self.snakes: dict[str, Snake] = {}
 
+        for i in range(n_bots):
+            self.add_bot()
+
         self.respawn = respawn
         self._room_id = uuid4().hex
 
         self.active = False
         self.game_loop_task = None
+
+        self.last_tick_execution_time = 0
 
     def start(self):
         self.game_loop_task = asyncio.create_task(self.game_loop())
@@ -37,6 +42,21 @@ class GameRoom:
     def room_id(self):
         return self._room_id
 
+    def add_bot(self):
+        bot_id = uuid4().hex
+        self.participants[bot_id] = Bot(
+                    name=get_name(bot_id),
+                    is_ready = True,
+                    color=get_color(bot_id),
+                    ai=BotAi()
+                )
+        
+        free_position = self.map.get_random_free_place(on_additional_check=self.snake_collision_controller.is_not_snaked)
+        self.snakes[bot_id] = Snake(snake_id = bot_id,
+                                        position=free_position, 
+                                        on_move_head=self.snake_collision_controller.claim,
+                                        on_move_tail=self.snake_collision_controller.free)
+
 
     def add_player(self) -> int:
         player_id = uuid4().hex
@@ -48,7 +68,7 @@ class GameRoom:
             color=player_color
         )
 
-        free_position = self.map.get_random_free_place()
+        free_position = self.map.get_random_free_place(on_additional_check=self.snake_collision_controller.is_not_snaked)
         self.snakes[player_id] = Snake(snake_id = player_id,
                                        position=free_position, 
                                        on_move_head=self.snake_collision_controller.claim,
@@ -64,21 +84,34 @@ class GameRoom:
         self.snake_collision_controller.free_from(player_id)
 
     def players_are_ready(self):
-        if self.participants == {}:
+        player_exists = False
+        for participant in self.participants:
+            if isinstance(participant,Player):
+                player_exists = True
+        if not player_exists:
             return False
         for participant in self.participants.values():
             if not participant.is_ready: 
                 return False
         return True
 
+    async def respawn_snake_with_latency(self, snake_id, latency):
+        await asyncio.sleep(latency)
+        self.respawn_snake(snake_id)
+
+
+    def respawn_snake(self, snake_id):
+        if self.respawn and not self.snakes[snake_id].is_alive:
+            self.snake_collision_controller.free_from(snake_id)
+            random_empty_position = self.map.get_random_free_place(on_additional_check = self.snake_collision_controller.is_not_snaked)       
+            self.snakes[snake_id].respawn(random_empty_position)
+
+
     def handle_command(self, snake_id, command):
         if command == "ready":
             self.participants[snake_id].is_ready = True
         elif command == "respawn":
-            if self.respawn and not self.snakes[snake_id].is_alive:
-                self.snake_collision_controller.free_from(snake_id)
-                random_empty_position = self.map.get_random_free_place(on_additional_check = self.snake_collision_controller.is_not_snaked)       
-                self.snakes[snake_id].respawn(random_empty_position)
+            self.respawn_snake(snake_id)
         else:
             try:
                 direction = getattr(Direction, command.upper())
@@ -90,6 +123,14 @@ class GameRoom:
     def update_snake_movement(self):
         for snake in self.snakes.values():
             snake.move()
+
+
+    def snake_death(self, snake_id):
+        self.participants[snake_id].change_points(-1)
+        self.snakes[snake_id].death()
+        if isinstance(self.participants[snake_id], Bot):
+            asyncio.create_task(self.respawn_snake_with_latency(snake_id,2))
+
 
     def check_world_collisions(self):
         for snake_id, snake in self.snakes.items():
@@ -103,24 +144,40 @@ class GameRoom:
                     self.participants[snake_id].change_points(1)
 
                 case Tile.WALL:
-                    self.participants[snake_id].change_points(-1)
-                    snake.death()
+                    self.snake_death(snake_id)
+                    
 
     def check_snakes_collisions(self):
         collided_snakes = self.snake_collision_controller.get_collided_snakes()
         for snake_id in collided_snakes:
-            self.snakes[snake_id].death()
-            self.participants[snake_id].change_points(-1)
+            self.snake_death(snake_id)
         self.snake_collision_controller.next_step()
 
     def update_bots_directions(self):
-        pass
+        for participant_id, participant in self.participants.items():
+            if not isinstance(participant, Bot):
+                continue
+
+            snake = self.snakes[participant_id]
+
+            if not snake.is_alive:
+                continue
+
+            direction = participant.ai.get_direction(
+                snake.get_head(),
+                self.map,
+                self.snake_collision_controller
+            )
+
+            snake.set_direction(direction)
+
 
     def update_world(self):
+        self.update_bots_directions()
         self.update_snake_movement()
         self.check_world_collisions()
         self.check_snakes_collisions()
-        self.update_bots_directions()
+        
 
     def serialize_snake(self, snake_id):
         snake = self.snakes.get(snake_id)
@@ -140,7 +197,9 @@ class GameRoom:
                 "speed": 1/self.game_tick,
                 "respawn": self.respawn,
                 "participants": [participant.to_dict() for participant in self.participants.values()],
-                "timestamp": self.snake_collision_controller.current_timestamp
+                "timestamp": self.snake_collision_controller.current_timestamp,
+                "exec_time_current": self.last_tick_execution_time,
+                "exec_time_max": self.game_tick
             },
             "snakes": {
                 snake_id: self.serialize_snake(snake_id) for snake_id in self.snakes
@@ -172,6 +231,7 @@ class GameRoom:
 
             time_end = time.perf_counter()
             exec_time = time_end-time_start
+            self.last_tick_execution_time = exec_time
             await asyncio.sleep(max(0,self.game_tick-exec_time))
 
     def get_data_connector(self, player_id):

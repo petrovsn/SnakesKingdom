@@ -11,6 +11,66 @@ const DIRECTIONS = {
 };
 
 
+function getSegmentType(body, index) {
+    const current = body[index];
+
+    const previous = body[index - 1];
+    const next = body[index + 1];
+
+    // У хвоста есть только следующий сегмент.
+    if (!previous && next) {
+        if (next[0] !== current[0]) {
+            return "horizontal";
+        }
+
+        if (next[1] !== current[1]) {
+            return "vertical";
+        }
+    }
+
+    // Если по какой-то причине есть только предыдущий.
+    if (previous && !next) {
+        if (previous[0] !== current[0]) {
+            return "horizontal";
+        }
+
+        if (previous[1] !== current[1]) {
+            return "vertical";
+        }
+    }
+
+    // Обычный внутренний сегмент.
+    if (previous && next) {
+        const previousIsHorizontal =
+            previous[1] === current[1];
+
+        const nextIsHorizontal =
+            next[1] === current[1];
+
+        const previousIsVertical =
+            previous[0] === current[0];
+
+        const nextIsVertical =
+            next[0] === current[0];
+
+        // Оба соседа находятся слева/справа.
+        if (previousIsHorizontal && nextIsHorizontal) {
+            return "horizontal";
+        }
+
+        // Оба соседа находятся сверху/снизу.
+        if (previousIsVertical && nextIsVertical) {
+            return "vertical";
+        }
+
+        // Один сосед по X, второй по Y.
+        return "turning-point";
+    }
+
+    return "horizontal";
+}
+
+
 function GameViewer() {
     const gameState = useSelector(
         state => state.game.gameState?.payload
@@ -83,11 +143,23 @@ function GameViewer() {
             snake.body.forEach(
                 ([x, y], index) => {
 
+                    const isHead =
+                        index === snake.body.length - 1;
+
+                    const segmentType =
+                        isHead
+                            ? "head"
+                            : getSegmentType(
+                                snake.body,
+                                index
+                            );
+
                     snakeCells.set(`${x}:${y}`, {
                         snakeId,
 
-                        isHead:
-                            index === snake.body.length - 1,
+                        isHead,
+
+                        segmentType,
 
                         direction: snake.direction,
                         color: snake.color,
@@ -154,6 +226,18 @@ function GameViewer() {
                 if (!snake.alive) {
                     className += " dead";
                 }
+
+                if (snake.segmentType === "horizontal") {
+                    className += " horizontal";
+                }
+
+                if (snake.segmentType === "vertical") {
+                    className += " vertical";
+                }
+
+                if (snake.segmentType === "turning-point") {
+                    className += " turning-point";
+                }
             }
 
 
@@ -180,15 +264,25 @@ function GameViewer() {
                                     }}
                                 />
                             )
-                            : (
-                                <div
-                                    className="snake-body-shape"
-                                    style={{
-                                        "--snake-color":
-                                            snake.color,
-                                    }}
-                                />
-                            )
+                            : snake.segmentType === "turning-point"
+                                ? (
+                                    <div
+                                        className="snake-turning-shape"
+                                        style={{
+                                            "--snake-color":
+                                                snake.color,
+                                        }}
+                                    />
+                                )
+                                : (
+                                    <div
+                                        className="snake-body-shape"
+                                        style={{
+                                            "--snake-color":
+                                                snake.color,
+                                        }}
+                                    />
+                                )
                     )}
 
                 </div>

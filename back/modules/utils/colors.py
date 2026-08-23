@@ -7,7 +7,6 @@ def get_color(uuid_id: str) -> int:
         "#8E24AA",  # purple
         "#5E35B1",  # deep purple
         "#3949AB",  # indigo
-        "#1E88E5",  # blue
         "#039BE5",  # light blue
         "#00ACC1",  # cyan
         "#00897B",  # teal
@@ -18,13 +17,9 @@ def get_color(uuid_id: str) -> int:
         "#FFB300",  # amber
         "#FB8C00",  # orange
         "#F4511E",  # deep orange
-        "#6D4C41",  # brown
-        "#757575",  # gray
-        "#546E7A",  # blue gray
         "#EC407A",  # bright pink
         "#26A69A",  # turquoise
         "#66BB6A",  # bright green
-        "#42A5F5",  # bright blue
         "#AB47BC",  # bright purple
     ]
         

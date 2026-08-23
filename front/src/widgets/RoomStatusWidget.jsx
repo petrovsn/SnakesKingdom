@@ -19,6 +19,8 @@ function RoomStatusWidget() {
         speed,
         respawn,
         participants = [],
+        exec_time_max,
+        exec_time_current,
     } = serviceInfo;
 
 
@@ -85,6 +87,16 @@ function RoomStatusWidget() {
 
                 <span className="room-status-value">
                     {participants.length}
+                </span>
+            </div>
+
+            <div className="room-status-row">
+                <span className="room-status-label">
+                    Performance
+                </span>
+
+                <span className="room-status-value">
+                    {exec_time_current.toFixed(2)}/{exec_time_max.toFixed(2)}/{(exec_time_current/exec_time_max).toFixed(2)}
                 </span>
             </div>
 

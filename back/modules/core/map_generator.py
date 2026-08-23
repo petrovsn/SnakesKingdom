@@ -32,6 +32,7 @@ class GameMap:
         self.map = [[Tile.WALL]+[Tile.EMPTY for i in range(x)]+[Tile.WALL] for j in range(y)]
         self.map.append([Tile.WALL for _ in range(x + 2)])
         self.map.insert(0, [Tile.WALL for _ in range(x + 2)])
+        self.last_added_tile = {}
 
     def get_random_free_place(
         self,
@@ -52,10 +53,15 @@ class GameMap:
 
             return position
         return None
- 
+
+
+    def get_closest_tile(self, position, tile: Tile):
+        return self.last_added_tile.get(tile)
+    
     def place_object(self, position: tuple, item: Tile):
         x,y = position
         self.map[y][x] = item
+        self.last_added_tile[item] = (x,y)
 
     def get_item(self, position):
         x,y = position
