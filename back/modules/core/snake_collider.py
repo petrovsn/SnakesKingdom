@@ -1,9 +1,9 @@
-import time
 import asyncio
 from uuid import uuid4
 
 from modules.core.entities import Snake, Player, Direction
-from modules.core.map_generator import GameMap, Tile
+from modules.core.maps.game_map import GameMap
+from modules.core.maps.tiles import Tile
 
 from collections import defaultdict
 
@@ -46,9 +46,9 @@ class SnakesCollisionController:
     def get_collided_snakes(self):
         return self.collided_snakes 
 
-    def next_step(self):
+    def next_step(self, next_timestamp):
         self.collided_snakes = []
-        self.current_timestamp+=1
+        self.current_timestamp = next_timestamp
 
     def is_not_snaked(self, position):
         return position not in self.snaked_tiles
